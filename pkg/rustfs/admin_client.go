@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -46,6 +47,11 @@ type RequestData struct {
 func New(config *RustfsAdminConfig) (client RustfsAdmin) {
 	client.endpointURL = client.createEndpointUrl(config.Endpoint, config.Ssl)
 	client.httpClient = &http.Client{}
+	if config.Insecure {
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402 -- explicitly configured by the provider user
+		client.httpClient.Transport = transport
+	}
 	client.accessKey = config.AccessKey
 	client.accessSecret = config.AccessSecret
 	return
