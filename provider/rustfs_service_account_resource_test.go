@@ -1,15 +1,31 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
 
+	frameworkresource "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/weinmann-emt/terraform-provider-rustfs/pkg/rustfs"
 )
+
+func TestServiceAccountResourceSchema(t *testing.T) {
+	r := NewServiceAccountRessource()
+	resp := &frameworkresource.SchemaResponse{}
+	r.Schema(context.Background(), frameworkresource.SchemaRequest{}, resp)
+
+	if diags := resp.Diagnostics; diags.HasError() {
+		t.Fatalf("schema diagnostics: %v", diags)
+	}
+
+	if _, ok := resp.Schema.GetAttributes()["policy"]; !ok {
+		t.Error("expected policy attribute")
+	}
+}
 
 func TestAccServiceAccountResource_basic(t *testing.T) {
 	accessKey := fmt.Sprintf("tf-test-sa-%d", acctest.RandInt())
@@ -25,6 +41,7 @@ func TestAccServiceAccountResource_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceAccountExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "access_key", accessKey),
+					resource.TestCheckResourceAttr(resourceName, "policy", ""),
 				),
 			},
 			{
@@ -67,6 +84,7 @@ resource "rustfs_serviceaccount" "test" {
   secret_key  = "superSecret123!"
   name        = "%s"
   description = "acceptance test service account"
+  policy      = ""
 }
 `, accessKey, name)
 }

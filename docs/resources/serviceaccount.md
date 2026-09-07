@@ -24,6 +24,7 @@ Manage ServiceUser/API Keys
 ### Optional
 
 - `description` (String) Short description of the scope we plan to use this token
+- `policy` (String) Inline policy for the service account. Changing this forces a new service account to be created.
 - `user` (String) Optional user the token should be scoped to
 
 ## Import

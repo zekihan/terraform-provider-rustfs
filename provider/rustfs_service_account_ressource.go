@@ -19,6 +19,7 @@ type serviceAccountResourceModel struct {
 	SecretKey   types.String `tfsdk:"secret_key"`
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
+	Policy      types.String `tfsdk:"policy"`
 	TargetUser  types.String `tfsdk:"user"`
 }
 
@@ -65,6 +66,13 @@ func (r *ServiceAccountRessource) Schema(_ context.Context, _ resource.SchemaReq
 				Optional:            true,
 				MarkdownDescription: "Short description of the scope we plan to use this token",
 			},
+			"policy": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Inline policy for the service account. Changing this forces a new service account to be created.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
 			"user": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Optional user the token should be scoped to. Changing this forces a new resource to be created.",
@@ -108,6 +116,7 @@ func (r *ServiceAccountRessource) Create(ctx context.Context, req resource.Creat
 		AccessKey:   plan.AccessKey.ValueString(),
 		SecretKey:   plan.SecretKey.ValueString(),
 		Description: plan.Description.ValueString(),
+		Policy:      plan.Policy.ValueString(),
 		TargetUser:  plan.TargetUser.ValueString(),
 	}
 	err := r.client.RustClient.CreateServiceAccount(account)
@@ -150,6 +159,7 @@ func (r *ServiceAccountRessource) Read(ctx context.Context, req resource.ReadReq
 
 	state.Name = types.StringValue(actual.Name)
 	state.Description = types.StringValue(actual.Description)
+	state.Policy = types.StringValue(actual.Policy)
 	// Save update status
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -171,6 +181,7 @@ func (r *ServiceAccountRessource) Update(ctx context.Context, req resource.Updat
 		AccessKey:   plan.AccessKey.ValueString(),
 		SecretKey:   plan.SecretKey.ValueString(),
 		Description: plan.Description.ValueString(),
+		Policy:      plan.Policy.ValueString(),
 		TargetUser:  plan.TargetUser.ValueString(),
 	}
 	err := r.client.RustClient.UpdateServiceAccount(account)
