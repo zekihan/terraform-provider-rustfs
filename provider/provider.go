@@ -5,6 +5,8 @@ package provider
 
 import (
 	"context"
+	"crypto/tls"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -95,7 +97,7 @@ func (p *RustfsProvider) Configure(ctx context.Context, req provider.ConfigureRe
 	secretKey := envOrDefault("RUSTFS_SECRET", config.AccessSecret.ValueString())
 
 	// Example client configuration for data sources and resources
-	tr, err := minio.DefaultTransport(config.Ssl.ValueBool())
+	tr, err := minioTransport(config.Ssl.ValueBool(), config.Insecure.ValueBool())
 	if err != nil {
 		resp.Diagnostics.AddError(err.Error(), err.Error())
 		return
@@ -117,6 +119,20 @@ func (p *RustfsProvider) Configure(ctx context.Context, req provider.ConfigureRe
 	}
 	resp.DataSourceData = client
 	resp.ResourceData = client
+}
+
+func minioTransport(ssl, insecure bool) (*http.Transport, error) {
+	transport, err := minio.DefaultTransport(ssl)
+	if err != nil || !insecure {
+		return transport, err
+	}
+
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = &tls.Config{}
+	}
+	transport.TLSClientConfig.InsecureSkipVerify = true
+
+	return transport, nil
 }
 
 func (p *RustfsProvider) Resources(ctx context.Context) []func() resource.Resource {
