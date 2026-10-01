@@ -36,3 +36,7 @@ website/vendor
 .env
 terraform-provider-rustfs
 docs/superpowers/
+
+# Local and generated JetBrains IDE files
+*.ipr
+*.iws
